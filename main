@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Oct 25 15:31:11 2020
+
+@author: nog
+"""
+
+import sympy as sm
+import sympy.physics.mechanics as me
+import matplotlib.pyplot as plt
+import numpy as np
+from pydy.system import System
+plt.style.use('ggplot')
+
+q1, q2, q3 = me.dynamicsymbols('q1, q2, q3')
+u1, u2, u3 = me.dynamicsymbols('u1, u2, u3')
+T = me.dynamicsymbols('T')
+
+m = sm.symbols('m[0:3]')
+
+g, k, c = sm.symbols('g, k, c')
+lc, ls = sm.symbols('l_c, l_s')
+mc, ms, mp = sm.symbols('m_c, m_s, m_p')
+
+Icz, Isz = sm.symbols('I_cz, I_sz')
+torq = sm.symbols('torq')
+
+p_dcm = sm.Matrix(np.diag([1,1,1]))
+
+N = me.ReferenceFrame('N')
+C = N.orientnew('C', 'Axis', (q1, N.z))
+S = N.orientnew('S', 'Axis', (sm.asin(lc/ls*me.dot(C.x,N.y)), N.z))
+P = N.orientnew('P', 'DCM', p_dcm)
+
+O = me.Point('O')
+P1 = O.locatenew('P_1', lc*C.x)
+P2 = P1.locatenew('P_2',ls*S.x)
+P3 = O.locatenew('P_3', (lc*me.dot(C.x, N.x)+ls*me.dot(S.x,N.x))*N.x)
+P2.set_pos(O, P3.pos_from(O))
+CMc = O.locatenew('CM_s', lc/2*C.x)
+CMs = P1.locatenew('CM_s', ls/2*S.x)
+
+rel = [sm.Eq(q2, sm.asin(lc/ls*me.dot(C.x,N.y))),
+        sm.Eq(q3, lc*me.dot(C.x, N.x)+ls*me.dot(S.x,N.x))]
+
+eqv = sm.solve(rel, q2, q3)
+    
+# %%
+
+
+P1.set_vel(N, P1.pos_from(O).dt(N))
+P2.set_vel(N, P2.pos_from(O).dt(N))
+CMc.v2pt_theory(P1, N, C)
+CMs.v2pt_theory(P2, N, S)
+
+eqs = [sm.Eq(u1, C.ang_vel_in(N).dot(N.z)),
+       sm.Eq(u2, S.ang_vel_in(N).dot(N.z)),
+       sm.Eq(u3, P2.vel(N).dot(N.x))]
+
+qdots = sm.solve(eqs, q1.diff(), q2.diff(), q3.diff())
+
+# %%
+
+P2.set_vel(N, P2.vel(N).subs(qdots).simplify())
+CMc.set_vel(N, CMc.vel(N).subs(qdots).simplify())
+CMs.set_vel(C, CMs.vel(N).subs(qdots).simplify())
+
+
+C.set_ang_vel(N, C.ang_vel_in(N).subs(qdots).simplify())
+S.set_ang_vel(C, S.ang_vel_in(C).subs(qdots).simplify())
+
+
+Ic = me.inertia(C, 0, 0, Icz)
+Is = me.inertia(S, 0, 0, Isz)
+
+
+kdes = [q1.diff() - u1]
+        # q2.diff() - u2,
+        # q3.diff() - u3]
+
+# kdes = [eqs[0].rhs - eqs[0].lhs,
+#         eqs[1].rhs - eqs[1].lhs,
+#         eqs[2].rhs - eqs[2].lhs]
+
+
+crank = me.RigidBody('crank', CMc, C, mc, (Ic, CMc))
+shaft = me.RigidBody('shaft', CMs, S, ms, (Is, CMs))
+pistn = me.Particle('piston', P2, mp)
+
+bodies = [crank, shaft, pistn]
+
+constr0 = [P2.pos_from(O) & N.y,
+           P3.pos_from(O) & N.z]
+constr1 = [P2.vel(N) & N.y,
+           P2.vel(N) & N.z]
+          
+# %%
+
+kane = me.KanesMethod(N, q_ind=[q1], u_ind=[u1], kd_eqs=kdes)
+                      
+                    
+fr, frstar = kane.kanes_equations(bodies)
+
+
+sys = System(kane)
+
+l1, l2 = [1.0, 3.0]
+sys.constants = {mc: 1.0,  # kg
+                 ms: 1.0,  # kg
+                 mp: 5.0,  # kg
+                 #g: 9.81,  # m/s/s
+                 lc: 1.0,  # m
+                 ls: 3.0,  # m
+                 Icz: 1.0,  # kg*m**2
+                 Isz: 1.0,  # kg*m**2
+                #c: 10.0,  # kg/s
+                #k: 60.0,  # N/m
+                 }
+sys.times = np.linspace(0.0, 2.0, num=100000)
+
+sys.initial_conditions = {q1: 0.0,  # m
+                          u1: 120*np.pi}  # m/s
+                          
+# specifieds = {T: 0.01}
+# sys.specifieds = specifieds
+
+x = sys.integrate()
+
+
+
+
+# # plt.plot(sys.times, x[:,2])
+# # plt.show()
+# plt.plot(sys.times, (x[:,0]%(2*np.pi))*360/(2*np.pi))
+# plt.show()
+# plt.plot(sys.times, x[:,1])
+# plt.show()
+
+# %%
+def crankldisp(_qin, _l1, _l2):
+    _qout=[]
+    for _q in _qin:
+        _qout.append(_l1*np.cos(_q) + _l2*np.cos(shaftang(_q, _l1,_l2)))
+    return _qout
+    
+def shaftang(_q, _l1, _l2):
+    return np.arcsin(_l1/_l2 * np.sin(_q))
+
+
+# %%
+Q1 = (x[:,0]%(2*np.pi))
+Q2 = np.arcsin(l1/l2 * np.sin(Q1))
+Q3 = l1*np.cos(Q1) + l2*np.cos(Q2)
+
+plt.plot(sys.times, np.rad2deg(Q1))
+
+
+plt.plot(sys.times, np.rad2deg(Q2))
+
+
+plt.plot(sys.times, Q3)
+
+
+
