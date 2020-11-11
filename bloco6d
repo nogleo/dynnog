@@ -22,10 +22,7 @@ lugs = np.array([[ L[0], -L[1],  L[2]],
                  [-L[3], -L[4],  L[5]],
                  [-L[3], -L[4], -L[5]]])
 
-lugi = np.array([[ L[0], 0,  L[2]],
-                 [ L[0], 0, -L[2]],
-                 [-L[3], 0,  L[5]],
-                 [-L[3], 0, -L[5]]])
+Lz
 
 # K = [0.1, 0.1, 0.1]
 
@@ -48,7 +45,7 @@ Li = [O.locatenew('Ls1', lugi[0, 0] * N.x + lugi[0, 1] * N.y + lugi[0, 2] * N.z)
       O.locatenew('Ls2', lugi[1, 0] * N.x + lugi[1, 1] * N.y + lugi[1, 2] * N.z),
       O.locatenew('Ls3', lugi[2, 0] * N.x + lugi[2, 1] * N.y + lugi[2, 2] * N.z),
       O.locatenew('Ls4', lugi[3, 0] * N.x + lugi[3, 1] * N.y + lugi[3, 2] * N.z)]
-
+y
 
 # Create Block
 B = N.orientnew('B', 'Body', (q[0], q[1], q[2]), '123')
@@ -73,9 +70,6 @@ CMb.vel(N)
 # lugs in bloco
 
 for i in range(4):
-    # bloco.apply_force(K[0]*Ls[i].pos_from(Li[i]).dot(N.x)*N.x, Ls[i])
-    # bloco.apply_force((K[1]*(ls - Ls[i].pos_from(Li[i]).dot(N.y))*N.y), Ls[i])
-    # bloco.apply_force(K[2]*Ls[i].pos_from(Li[i]).dot(N.z)*N.z, Ls[i])
     loads.append((Ls[i], -K[0]*Ls[i].pos_from(Li[i]).dot(N.x)*N.x + K[1]*(ls - Ls[i].pos_from(Li[i]).dot(N.y))*N.y - K[2]*Ls[i].pos_from(Li[i]).dot(N.z)*N.z))
     Li[i].v2pt_theory(O, N, N)
     Ls[i].v2pt_theory(CMb, N, B)
@@ -111,12 +105,12 @@ CMb.set_vel(N, CMb.vel(N).subs(qdot0).simplify())
 bodies = [block]
 
 
-#kdes = [qd[0] - u[0],
-#         I_b: [1.0, 1.0, 1.0]qd[1] - u[1],
-#        qd[2] - u[2],
-#        qd[3] - u[3],
-#        qd[4] - u[4],
-#        qd[5] - u[5]]
+kdes = [q[0].diff() - u[0],
+        q[1].diff() - u[1],
+        q[2].diff() - u[2],
+        q[3].diff() - u[3],
+        q[4].diff() - u[4],
+        q[5].diff() - u[5]]
 
 kdes = [eq1[0].rhs - eq1[0].lhs,
         eq1[1].rhs - eq1[1].lhs,
@@ -152,18 +146,8 @@ sys.constants = {mb: 1.0,
                  Iby: 0.1,
                  Ibz: 0.1}
 
-sys.initial_conditions = {q[0]: 0.0,
-                          q[1]: 0.0,
-                          q[2]: 0.0,
-                          q[3]: 0.0,
-                          q[4]: sys.constants[ls] + sys.constants[L[1]],
-                          q[5]: 0.0,
-                          u[0]: 0.0,
-                          u[1]: 0.0,
-                          u[2]: 0.0,
-                          u[3]: 0.0,
-                          u[4]: 0.0,
-                          u[5]: 0.0}
+
+
 #
 #
 sys.times = np.linspace(0, 10.0, 100000)
