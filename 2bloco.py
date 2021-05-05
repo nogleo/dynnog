@@ -118,8 +118,7 @@ for i in range(4):
     loads.append((P12[i], -(cs[0] * P12[i].vel(N0).dot(N0.x) * N0.x + cs[1] * P12[i].vel(N0).dot(N0.y) * N0.y + cs[2] * P12[i].vel(N0).dot(N0.z) * N0.z)))
     loads.append((P21[i], -(cs[0] * P21[i].vel(N0).dot(N0.x) * N0.x + cs[1] * P21[i].vel(N0).dot(N0.y) * N0.y + cs[2] * P21[i].vel(N0).dot(N0.z) * N0.z)))
 
-In1 = (me.inertia(N1, I1[0], I1[1], I1[2]), P1)
-In2 = (me.inertia(N2, I2[0], I2[1], I2[2]), P2)
+np.vstack = (me.inertia(N2, I2[0], I2[1], I2[2]), P2)
 In3 = (me.inertia(N3, I3[0], I3[1], I3[2]), P3)
 In4 = (me.inertia(N3, I4[0], I4[1], I4[2]), P4)
 In5 = (me.inertia(N5, I5[0], I5[1], I5[2]), P5)

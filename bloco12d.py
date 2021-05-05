@@ -1,5 +1,5 @@
 import sympy as sm
-from sympy.solvers.ode.systems  import linodesolve
+
 import sympy.physics.mechanics as me
 import autograd as ag
 import matplotlib.pyplot as plt
@@ -244,7 +244,7 @@ qdots = [sm.solve(eqs,
 #         eqs[7].rhs - eqs[7].lhs,
 #         eqs[8].rhs - eqs[8].lhs,
 #         eqs[9].rhs - eqs[9].lhs,
-z#         eqs[10].rhs - eqs[10].lhs,
+#         eqs[10].rhs - eqs[10].lhs,
 #         eqs[11].rhs - eqs[11].lhs]
 
 kdes = [q[0].diff() - u[0],
